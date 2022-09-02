@@ -43,8 +43,8 @@
         self.metalView = [[BDAlphaPlayerMetalView alloc] initWithDelegate:self];
         [self.view insertSubview:self.metalView atIndex:0];
     }
-    self.startBtn.hidden = YES;
-    self.stopBtn.alpha = 0.3;
+//    self.startBtn.hidden = YES;
+//    self.stopBtn.alpha = 0.3;
     
     BDAlphaPlayerMetalConfiguration *configuration = [BDAlphaPlayerMetalConfiguration defaultConfiguration];
     NSString *testResourcePath = [[[NSBundle mainBundle] bundlePath] stringByAppendingPathComponent:@"TestResource"];
@@ -52,6 +52,7 @@
     configuration.directory = directory;
     configuration.renderSuperViewFrame = self.view.frame;
     configuration.orientation = BDAlphaPlayerOrientationPortrait;
+    configuration.loop = YES;
     
     [self.metalView playWithMetalConfiguration:configuration];
 }
@@ -63,13 +64,18 @@
     self.metalView = nil;
 }
 
+- (void)frameCallBack:(NSTimeInterval)duration {
+//    NSLog(@"duration is %.3f", duration);
+}
+
 - (void)metalView:(BDAlphaPlayerMetalView *)metalView didFinishPlayingWithError:(NSError *)error
 {
     if (error) {
         NSLog(@"%@", error.localizedDescription);
     }
-    self.startBtn.hidden = NO;
-    self.stopBtn.alpha = 1;
+    NSLog(@"end");
+//    self.startBtn.hidden = NO;
+//    self.stopBtn.alpha = 1;
 }
 
 @end

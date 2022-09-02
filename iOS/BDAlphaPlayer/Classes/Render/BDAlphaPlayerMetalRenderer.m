@@ -150,7 +150,32 @@
 
 - (void)drawInMTKView:(MTKView *)view
 {
-    CMSampleBufferRef const sampleBuffer = [self.output copyNextSampleBuffer];
+    CMSampleBufferRef sampleBuffer = [self.output copyNextSampleBuffer];
+    if (sampleBuffer == NULL) {
+        self.framePlayDuration = 0;
+        NSLog(@"sample Buffer is null");
+        return;
+    }
+
+//    /// 播放到末尾
+//    if (ceil(self.framePlayDuration * 1000 + 100) >= ceil(self.output.videoDuration * 1000)) {
+//        CFRelease(sampleBuffer);
+//        for (int i = 0; i < 10; ++i) {
+//            CMSampleBufferRef buffer = [self.output copyNextSampleBuffer];
+//            NSLog(@"skip buffer is %@", buffer);
+//            if (buffer) {
+//                CFRelease(buffer);
+//            }
+//        }
+//        NSLog(@"skip 3 buffers");
+//        self.framePlayDuration = 0;
+//        sampleBuffer = [self.output copyNextSampleBuffer];
+//        if (sampleBuffer == NULL) {
+//            return;
+//        }
+//    }
+
+    NSLog(@"buffer is %@", sampleBuffer);
     id<MTLCommandBuffer> commandBuffer = [self.commandQueue commandBuffer];
     MTLRenderPassDescriptor *renderPassDescriptor = view.currentRenderPassDescriptor;
     if (self.framePlayDuration == 0.0f) {
@@ -161,6 +186,13 @@
     self.framePlayDuration += [self.output frameDuration];
     self.framePlayDuration = MIN(self.output.videoDuration, self.framePlayDuration);
     if (renderPassDescriptor && sampleBuffer) {
+
+        CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+        if (pixelBuffer == NULL) {
+            CFRelease(sampleBuffer);
+            return;
+        }
+
         id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
         [renderEncoder setViewport:(MTLViewport){0.0, 0.0, self.viewportSize.x, self.viewportSize.y, -1.0, 1.0 }];
         [renderEncoder setRenderPipelineState:self.pipelineState];
@@ -168,7 +200,7 @@
         [renderEncoder setVertexBuffer:self.vertices
                                 offset:0
                                atIndex:BDAlphaPlayerVertexInputIndexVertices];
-        CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+
         id<MTLTexture> textureY = nil;
         id<MTLTexture> textureUV = nil;
         // textureY

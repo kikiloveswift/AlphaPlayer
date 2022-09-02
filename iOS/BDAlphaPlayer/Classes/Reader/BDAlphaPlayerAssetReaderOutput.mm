@@ -25,6 +25,8 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
 
 @property (nonatomic, strong) NSObject *bufferQueueToken;
 
+@property (nonatomic, assign) CMTime assetDuration;
+
 @end
 
 @implementation BDAlphaPlayerAssetReaderOutput
@@ -60,6 +62,23 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
     }
 }
 
+- (void)seekToTime:(CMTime)time {
+    CMSampleBufferRef const next = [self.output copyNextSampleBuffer];
+    if (next != NULL) {
+        CFRelease(next);
+        return;
+    }
+    CMTimeRange range = CMTimeRangeMake(time, CMTimeSubtract(self.assetDuration, time));
+    NSValue *value = [NSValue valueWithCMTimeRange:range];
+    [self.output resetForReadingTimeRanges:@[value]];
+}
+
+- (void)seekToStart {
+    NSLog(@"begin seekTo Start");
+    [self seekToTime:kCMTimeZero];
+    NSLog(@"seekToStart");
+}
+
 - (void)fillBufferQueueIfNeed
 {
     dispatch_async(self.readingQueue, ^{
@@ -78,7 +97,12 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
                     }
                 }
             } else {
-                break;
+                @synchronized (self.bufferQueueToken) {
+                    [self seekToStart];
+                    while (!self->_sampleBufferQueue.empty()) {
+                        self->_sampleBufferQueue.pop();
+                    }
+                }
             }
         } while (true);
     });
@@ -125,11 +149,13 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
     };
     AVAssetReaderTrackOutput *output = [[AVAssetReaderTrackOutput alloc] initWithTrack:videoTrack outputSettings:setting];
     output.alwaysCopiesSampleData = NO;
+    output.supportsRandomAccess = YES;
     [reader addOutput:output];
     [reader startReading];
     
     NSTimeInterval duration = CMTimeGetSeconds(videoTrack.minFrameDuration);
     CMTime videoTotalTime = [asset duration];
+    _assetDuration = videoTotalTime;
     if (videoTotalTime.timescale) {
         _videoDuration = videoTotalTime.value / (videoTotalTime.timescale * 1.0f);
     } else {
@@ -152,6 +178,7 @@ NSString * const BDAlphaPlayerAssetReaderOutputErrorDomain = @"BDAlphaPlayerAsse
     @synchronized (self.bufferQueueToken) {
         ret = _sampleBufferQueue.size() > 0 || AVAssetReaderStatusReading == self.reader.status;
     }
+    NSLog(@"hasNextBuffer ret is %d", ret);
     return ret;
 }
 

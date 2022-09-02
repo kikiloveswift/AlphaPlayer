@@ -37,6 +37,8 @@ typedef NS_ENUM(NSUInteger, BDAlphaPlayerAssetReaderOutputErrorCode) {
 
 - (void)drainSampleBufferQueue;
 
+- (void)seekToStart;
+
 @end
 
 NS_ASSUME_NONNULL_END

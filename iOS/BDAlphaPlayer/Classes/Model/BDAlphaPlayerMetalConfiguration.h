@@ -28,6 +28,8 @@ NS_ASSUME_NONNULL_BEGIN
 */
 @property (nonatomic, assign) CGRect renderSuperViewFrame;
 
+@property (nonatomic, assign) BOOL loop;
+
 + (instancetype)defaultConfiguration;
 
 @end

@@ -29,6 +29,8 @@
 
 @property (atomic, assign) BOOL hasDestroyed;
 
+@property (nonatomic, strong, nullable) BDAlphaPlayerMetalConfiguration *config;
+
 @end
 
 @implementation BDAlphaPlayerMetalView
@@ -60,6 +62,7 @@
 - (void)playWithMetalConfiguration:(BDAlphaPlayerMetalConfiguration *)configuration
 {
     NSAssert(!CGRectIsEmpty(configuration.renderSuperViewFrame), @"You need to initialize renderSuperViewFrame before playing");
+    self.config = configuration;
     NSError *error = nil;
     self.renderSuperViewFrame = configuration.renderSuperViewFrame;
     self.model = [BDAlphaPlayerResourceModel resourceModelFromDirectory:configuration.directory orientation:configuration.orientation error:&error];
@@ -161,6 +164,10 @@
         if (!wSelf) {
             return;
         }
+        if (wSelf.config.loop) {
+//            [self.output seekToStart];
+            return;
+        }
         [wSelf destroyMTKView];
         if (renderCompletion) {
             renderCompletion();
@@ -188,6 +195,7 @@
         self.mtkView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         self.mtkView.backgroundColor = UIColor.clearColor;
         self.mtkView.device = MTLCreateSystemDefaultDevice();
+        self.mtkView.preferredFramesPerSecond = 25;
         [self addSubview:self.mtkView];
         
         self.metalRenderer = [[BDAlphaPlayerMetalRenderer alloc] initWithMetalKitView:self.mtkView];
